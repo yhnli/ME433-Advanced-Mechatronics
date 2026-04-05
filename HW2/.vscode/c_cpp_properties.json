@@ -1,22 +1,22 @@
 {
-  "configurations": [
-    {
-      "name": "Pico",
-      "includePath": [
-        "${workspaceFolder}/**",
-        "${PICO_SDK_PATH}/src/common/pico_stdlib/include",
-        "${PICO_SDK_PATH}/src/rp2_common/pico_platform_generic/include",
-        "${PICO_SDK_PATH}/src/boards/include",
-        "${PICO_SDK_PATH}/src/rp2040/hardware_regs/include",
-        "${PICO_SDK_PATH}/src/rp2_common/hardware_base/include"
-      ],
-      "defines": [
-        "PICO_ON_DEVICE=1"
-      ],
-      "compilerPath": "arm-none-eabi-gcc",
-      "cStandard": "c11",
-      "intelliSenseMode": "gcc-arm"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "Pico",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${userHome}/.pico-sdk/sdk/2.2.0/**"
+            ],
+            "forcedInclude": [
+                "${workspaceFolder}/build/generated/pico_base/pico/config_autogen.h",
+                "${userHome}/.pico-sdk/sdk/2.2.0/src/common/pico_base_headers/include/pico.h"
+            ],
+            "defines": [],
+            "compilerPath": "${userHome}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-gcc",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
 }
