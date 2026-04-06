@@ -6,7 +6,7 @@
 #define PWMPIN 16
 
 // function prototype
-void set_servo();
+void set_servo(int angle);
 
 bool timer_interrupt_function(__unused struct repeating_timer *t) {
     // read the adc
@@ -30,13 +30,13 @@ int main()
     gpio_set_function(PWMPIN, GPIO_FUNC_PWM); // Set the Pin to be PWM
     uint slice_num = pwm_gpio_to_slice_num(PWMPIN); // Get PWM slice number
     // the clock frequency is 150MHz divided by a float from 1 to 255
-    float div = 10; // must be between 1-255
+    float div = 50; // must be between 1-255
     pwm_set_clkdiv(slice_num, div); // sets the clock speed
-    uint16_t wrap = 1500; // when to rollover, must be less than 65535
+    uint16_t wrap = 60000; // when to rollover, must be less than 65535
     pwm_set_wrap(slice_num, wrap); 
     pwm_set_enabled(slice_num, true); // turn on the PWM
 
-    pwm_set_gpio_level(PWMPIN, 1500/2); // set the duty cycle to 50%
+    pwm_set_gpio_level(PWMPIN, 0); // set the duty cycle to 50%
 
     // turn on the adc
     adc_init();
@@ -44,11 +44,22 @@ int main()
     adc_select_input(0); // sample from ADC0
 
     while (true) {
-        tight_loop_contents(); // do nothing here, the interrupt does the work
+        // loop through servo angles from 10 to 170 degrees
+        int i = 0;
+        // start at 10, go up to 170 
+        for (i=10; i<1780; i++){
+            set_servo(i);
+            sleep_ms(10);
+        }
+        // from 170, count back down to 10
+        for (i=170; i>0; i--){
+            set_servo(i);
+            sleep_ms(10);
+        }
     }
 }
 
 // function to set the angle of the RC Servo using PWM
-void set_servo() {
-    
+void set_servo(int angle) {
+    pwm_set_gpio_level(PWMPIN, (int)((0.05+(angle/180.0)*0.05)*60000));
 }
