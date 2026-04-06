@@ -36,7 +36,7 @@ int main()
     pwm_set_wrap(slice_num, wrap); 
     pwm_set_enabled(slice_num, true); // turn on the PWM
 
-    pwm_set_gpio_level(PWMPIN, 0); // set the duty cycle to 50%
+    pwm_set_gpio_level(PWMPIN, 0); // set the duty cycle to 0%
 
     // turn on the adc
     adc_init();
@@ -47,7 +47,7 @@ int main()
         // loop through servo angles from 10 to 170 degrees
         int i = 0;
         // start at 10, go up to 170 
-        for (i=10; i<1780; i++){
+        for (i=10; i<170; i++){
             set_servo(i);
             sleep_ms(10);
         }
@@ -60,6 +60,8 @@ int main()
 }
 
 // function to set the angle of the RC Servo using PWM
+// min duty cycle is 2% -> 0 degrees
+// max duty cycle is 12.5% -> 180 degrees
 void set_servo(int angle) {
-    pwm_set_gpio_level(PWMPIN, (int)((0.05+(angle/180.0)*0.05)*60000));
+    pwm_set_gpio_level(PWMPIN, (int)((0.02+(angle/180.0)*0.1)*60000));
 }
