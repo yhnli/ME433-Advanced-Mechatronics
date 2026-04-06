@@ -46,7 +46,9 @@ pico_enable_stdio_usb(Homework2 0)
 
 # Add the standard library to the build
 target_link_libraries(Homework2
-        pico_stdlib)
+        pico_stdlib
+        hardware_pwm
+        hardware_adc)
 
 # Add the standard include files to the build
 target_include_directories(Homework2 PRIVATE
