@@ -18,6 +18,27 @@
 // pico led defines
 #define HEARTBEAT_FREQ 250
 
+// general purpose read/write functions
+// send data (write one byte to a register)
+void setPin(unsigned char add, unsigned char reg, unsigned char val) {
+    // buf = 8 bit array of data that are sending
+        // first byte is the value of the register you are trying to change
+        // second byte is the value to want to write to that register
+    uint8_t buf[2] = {reg, val};
+    i2c_write_blocking(I2C_PORT, add, buf, 2, false);
+
+}
+// read data (read one byte from a register)
+unsigned char readPin(unsigned char add, unsigned char reg) {
+    // reg is the 8bit register you want to read from
+    // buf is the 8bit number you are getting from the chip
+    uint8_t buf[1] = {reg};
+    i2c_write_blocking(I2C_PORT, add, buf, 1, true);   
+    i2c_read_blocking (I2C_PORT, add, buf, 1, false);
+    return buf[0];
+
+}
+
 int main()
 {
     stdio_init_all();
@@ -35,6 +56,10 @@ int main()
     gpio_pull_up(I2C_SCL);
     // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
 
+    // chip init
+    // set GP7 to output
+    // set GP0 and other pins to input
+
     while (true) {
         // blink pico led
         gpio_put(PICO_DEFAULT_LED_PIN, 1);
@@ -42,6 +67,6 @@ int main()
         gpio_put(PICO_DEFAULT_LED_PIN, 0);
         sleep_ms(HEARTBEAT_FREQ);
 
-        
+
     }
 }
