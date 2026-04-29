@@ -45,28 +45,70 @@ def low_pass_filter(signal, A, B):
 # csv reads
 A1, A2 = read_csv('sigA.csv')
 B1, B2 = read_csv('sigB.csv')
+C1, C2 = read_csv('sigC.csv')
 D1, D2 = read_csv('sigD.csv')
 
 signals = [
-    ("A", A1, A2, "b"),
-    ("B", B1, B2, "r"),
-    ("D", D1, D2, "g"),
+    ("A", A1, A2),
+    ("B", B1, B2),
+    ("C", C1, C2),
+    ("D", D1, D2),
 ]
 
-# plots (part 5)
-plt.figure()
-fig, axs = plt.subplots(3, 2, figsize=(12, 10))
-for i, (name, t, x, color) in enumerate(signals):
+# fft (part 5)
+# plots
+fig, axs = plt.subplots(4, 2, figsize=(12, 10))
+for i, (name, t, x) in enumerate(signals):
     # time-domain plot
-    axs[i, 0].plot(t, x, color, lw=0.5)
+    axs[i, 0].plot(t, x, lw=0.5)
     axs[i, 0].set_title(f"Signal {name}")
     axs[i, 0].set_xlabel("Time")
     axs[i, 0].set_ylabel("Amplitude")
 
     # frequency-domain plot
     frq, Y = compute_fft(x, 1000)
-    axs[i, 1].loglog(frq, abs(Y), color)
+    axs[i, 1].loglog(frq, abs(Y), lw=0.5)
     axs[i, 1].set_title(f"FFT of Signal {name}")
+    axs[i, 1].set_xlabel("Freq (Hz)")
+    axs[i, 1].set_ylabel("|Y(freq)|")
+plt.show()
+
+# filtering (part 6)
+A_filtered = low_pass_filter(A2, 0.9, 0.1) 
+B_filtered = low_pass_filter(B2, 0.9, 0.1)
+C_filtered = low_pass_filter(C2, 0.9, 0.1)
+D_filtered = low_pass_filter(D2, 0.9, 0.1)  
+# plots for filtered signals
+fig, axs = plt.subplots(4, 2, figsize=(12, 10))
+for i, (name, t, x) in enumerate(signals):
+    # time-domain plot of filtered signal
+    if name == "A":
+        axs[i, 0].plot(t, A2, lw=0.5, color='k')
+        axs[i, 0].plot(t, A_filtered, lw=0.5, color='r')
+    elif name == "B":
+        axs[i, 0].plot(t, B2, lw=0.5, color='k')
+        axs[i, 0].plot(t, B_filtered, lw=0.5, color='r')
+    elif name == "C":
+        axs[i, 0].plot(t, C2, lw=0.5, color='k')
+        axs[i, 0].plot(t, C_filtered, lw=0.5, color='r')
+    else:
+        axs[i, 0].plot(t, D2, lw=0.5, color='k')
+        axs[i, 0].plot(t, D_filtered, lw=0.5, color='r')
+    
+    axs[i, 0].set_title(f"Filtered Signal {name}")
+    axs[i, 0].set_xlabel("Time")
+    axs[i, 0].set_ylabel("Amplitude")
+
+    # frequency-domain plot of filtered signal
+    if name == "A":
+        frq, Y = compute_fft(A_filtered, 1000)
+    elif name == "B":
+        frq, Y = compute_fft(B_filtered, 1000)
+    else:
+        frq, Y = compute_fft(D_filtered, 1000)
+
+    axs[i, 1].loglog(frq, abs(Y), lw=0.5)
+    axs[i, 1].set_title(f"FFT of Filtered Signal {name}")
     axs[i, 1].set_xlabel("Freq (Hz)")
     axs[i, 1].set_ylabel("|Y(freq)|")
 plt.show()
