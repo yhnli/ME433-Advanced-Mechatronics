@@ -3,8 +3,6 @@
 #include "hardware/i2c.h"
 
 // I2C defines
-// This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
 #define I2C_PORT i2c0
 #define I2C_SDA 4
 #define I2C_SCL 5
@@ -35,7 +33,7 @@ void setPin(unsigned char add, unsigned char reg, unsigned char val) {
 
 }
 // read data (read one byte from a register)
-unsigned char readPin(unsigned char add, unsigned char reg) {
+uint8_t readPin(unsigned char add, unsigned char reg) {
     // reg is the 8bit register you want to read from
     // buf is the 8bit number you are getting from the chip
     uint8_t buf[1] = {reg};
@@ -57,7 +55,6 @@ int main()
     
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
-    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
 
     // chip init
     // set GP7 to output
@@ -65,7 +62,6 @@ int main()
     setPin(MCP23008_ADDR, IODIR, 0b01111111);
 
     // LED starts off
-    uint8_t olat = readPin(MCP23008_ADDR, OLAT);
     setPin(MCP23008_ADDR, OLAT, 0x00);
 
     while (true) {
@@ -81,8 +77,14 @@ int main()
         setPin(MCP23008_ADDR, OLAT, 0x00);               
         sleep_ms(HEARTBEAT_FREQ);
 
-        // // incorporate led button press
-        // uint8_t gpio_state = readPin(MCP23008_ADDR, GPIO);
+        // incorporate led button press
+        // uint8_t btn_state = readPin(MCP23008_ADDR, GPIO);
+        // if ((btn_state & (1 << MCP_BTN_PIN))) {
+        //     // button pressed
+        //     setPin(MCP23008_ADDR, OLAT, (1 << MCP_LED_PIN));
+        // } else {
+        //     // button not pressed
+        //     setPin(MCP23008_ADDR, OLAT, 0x00);
         // }
-    }
+    }   
 }
