@@ -72,19 +72,21 @@ int main()
         sleep_ms(HEARTBEAT_FREQ);
 
         // blink LED on GP7 (test)
-        setPin(MCP23008_ADDR, OLAT,  (1 << MCP_LED_PIN));
-        sleep_ms(HEARTBEAT_FREQ);
-        setPin(MCP23008_ADDR, OLAT, 0x00);               
-        sleep_ms(HEARTBEAT_FREQ);
+        // setPin(MCP23008_ADDR, OLAT,  (1 << MCP_LED_PIN));
+        // sleep_ms(HEARTBEAT_FREQ);
+        // setPin(MCP23008_ADDR, OLAT, 0x00);               
+        // sleep_ms(HEARTBEAT_FREQ);
 
         // incorporate led button press
-        // uint8_t btn_state = readPin(MCP23008_ADDR, GPIO);
-        // if ((btn_state & (1 << MCP_BTN_PIN))) {
-        //     // button pressed
-        //     setPin(MCP23008_ADDR, OLAT, (1 << MCP_LED_PIN));
-        // } else {
-        //     // button not pressed
-        //     setPin(MCP23008_ADDR, OLAT, 0x00);
-        // }
+        uint8_t btn_state = readPin(MCP23008_ADDR, GPIO);
+        if (!(btn_state & (1 << MCP_BTN_PIN))) { 
+            // button pressed (pin LOW)
+            setPin(MCP23008_ADDR, OLAT, (1 << MCP_LED_PIN));
+        } 
+        else {
+            // button not pressed (pin HIGH)
+            setPin(MCP23008_ADDR, OLAT, 0x00);
+        }   
     }   
 }
+
