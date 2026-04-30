@@ -35,7 +35,7 @@ def compute_fft(data, sample_rate):
 # function to apply low-pass IIR filter
 def low_pass_filter(signal, A, B):
     filtered_signal = np.zeros_like(signal)
-    filtered_signal[0] = signal[0] # initialize the first value
+    filtered_signal[0] = signal[0] 
 
     for i in range(1, len(signal)):
         filtered_signal[i] = A * filtered_signal[i-1] + B * signal[i]
@@ -58,6 +58,7 @@ signals = [
 # fft (part 5)
 # plots
 fig, axs = plt.subplots(4, 2, figsize=(12, 10))
+
 for i, (name, t, x) in enumerate(signals):
     # time-domain plot
     axs[i, 0].plot(t, x, lw=0.5)
@@ -71,44 +72,28 @@ for i, (name, t, x) in enumerate(signals):
     axs[i, 1].set_title(f"FFT of Signal {name}")
     axs[i, 1].set_xlabel("Freq (Hz)")
     axs[i, 1].set_ylabel("|Y(freq)|")
+
 plt.show()
 
 # filtering (part 6)
-A_filtered = low_pass_filter(A2, 0.9, 0.1) 
-B_filtered = low_pass_filter(B2, 0.9, 0.1)
-C_filtered = low_pass_filter(C2, 0.9, 0.1)
-D_filtered = low_pass_filter(D2, 0.9, 0.1)  
-# plots for filtered signals
-fig, axs = plt.subplots(4, 2, figsize=(12, 10))
+A, B = 0.9, 0.1  
+filtered_sig = [
+    low_pass_filter(A2, A, B),
+    low_pass_filter(B2, A, B),
+    low_pass_filter(C2, A, B),
+    low_pass_filter(D2, A, B),
+]
+
+# plots 
+fig, axs = plt.subplots(4, 1, figsize=(12, 10))
 for i, (name, t, x) in enumerate(signals):
-    # time-domain plot of filtered signal
-    if name == "A":
-        axs[i, 0].plot(t, A2, lw=0.5, color='k')
-        axs[i, 0].plot(t, A_filtered, lw=0.5, color='r')
-    elif name == "B":
-        axs[i, 0].plot(t, B2, lw=0.5, color='k')
-        axs[i, 0].plot(t, B_filtered, lw=0.5, color='r')
-    elif name == "C":
-        axs[i, 0].plot(t, C2, lw=0.5, color='k')
-        axs[i, 0].plot(t, C_filtered, lw=0.5, color='r')
-    else:
-        axs[i, 0].plot(t, D2, lw=0.5, color='k')
-        axs[i, 0].plot(t, D_filtered, lw=0.5, color='r')
-    
-    axs[i, 0].set_title(f"Filtered Signal {name}")
-    axs[i, 0].set_xlabel("Time")
-    axs[i, 0].set_ylabel("Amplitude")
+    frq_raw, Y_raw = compute_fft(x, 1000)
+    frq, Y = compute_fft(filtered_sig[i], 1000)
+    axs[i].loglog(frq_raw, abs(Y_raw), color='black', lw=0.5, label='Unfiltered')
+    axs[i].loglog(frq,     abs(Y),     color='red',   lw=0.5, label='Filtered')
+    axs[i].set_title(f"Signal {name}  (A={A}, B={B})")
+    axs[i].set_xlabel("Freq (Hz)")
+    axs[i].set_ylabel("|Y(freq)|")
+    axs[i].legend()
 
-    # frequency-domain plot of filtered signal
-    if name == "A":
-        frq, Y = compute_fft(A_filtered, 1000)
-    elif name == "B":
-        frq, Y = compute_fft(B_filtered, 1000)
-    else:
-        frq, Y = compute_fft(D_filtered, 1000)
-
-    axs[i, 1].loglog(frq, abs(Y), lw=0.5)
-    axs[i, 1].set_title(f"FFT of Filtered Signal {name}")
-    axs[i, 1].set_xlabel("Freq (Hz)")
-    axs[i, 1].set_ylabel("|Y(freq)|")
 plt.show()
