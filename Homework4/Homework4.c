@@ -29,7 +29,7 @@ int main()
     gpio_pull_up(I2C_SCL);
     
     // init display
-    // ssd1306_setup();
+    ssd1306_setup();
 
     while (true) {
         // blink pico led
@@ -40,5 +40,10 @@ int main()
 
         // blink display pixel (test)
         ssd1306_drawPixel(1, 1, 1);
+        ssd1306_update();
+        sleep_ms(HEARTBEAT_FREQ);
+        ssd1306_drawPixel(1, 1, 0);
+        ssd1306_update();
+        sleep_ms(HEARTBEAT_FREQ);
     }
 }

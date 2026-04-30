@@ -57,8 +57,6 @@ target_include_directories(Homework4 PRIVATE
 # Add any user requested libraries
 target_link_libraries(Homework4 
         hardware_i2c
-        ssd1306
-        font
         )
 
 pico_add_extra_outputs(Homework4)
