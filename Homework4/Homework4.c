@@ -2,16 +2,23 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "ssd1306.h"
+#include "font.h"
+
+// PICO defines
+#define HEARTBEAT_FREQ 250
 
 // I2C defines
 #define I2C_PORT i2c0
 #define I2C_SDA 4
 #define I2C_SCL 5
 
-
 int main()
 {
     stdio_init_all();
+
+    // pico led init
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
@@ -20,10 +27,18 @@ int main()
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
-    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
+    
+    // init display
+    // ssd1306_setup();
 
     while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
+        // blink pico led
+        gpio_put(PICO_DEFAULT_LED_PIN, 1);
+        sleep_ms(HEARTBEAT_FREQ);
+        gpio_put(PICO_DEFAULT_LED_PIN, 0);
+        sleep_ms(HEARTBEAT_FREQ);
+
+        // blink display pixel (test)
+        ssd1306_drawPixel(1, 1, 1);
     }
 }
