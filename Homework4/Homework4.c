@@ -45,5 +45,10 @@ int main()
         ssd1306_drawPixel(1, 1, 0);
         ssd1306_update();
         sleep_ms(HEARTBEAT_FREQ);
+
+        // drawChar (test)
+        ssd1306_clear();
+        drawChar(10, 10, 'A');
+        ssd1306_update();
     }
 }

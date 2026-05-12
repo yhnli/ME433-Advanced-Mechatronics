@@ -2,7 +2,7 @@
 #define FONT_H__
 
 // make these functions:
-// void drawChar(...);
+void drawChar(int x, int y, char c);
 // void drawString(...);
 
 // lookup table for all of the ascii characters
