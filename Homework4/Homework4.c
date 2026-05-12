@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "hardware/adc.h"
 #include "hardware/i2c.h"
 #include "ssd1306.h"
 #include "font.h"
@@ -35,6 +36,10 @@ int main()
     
     // init display
     ssd1306_setup();
+    char message[50];
+
+    // get start time for FPS calc
+    unsigned int t_start = to_us_since_boot(get_absolute_time());  
 
     while (true) {
         // blink pico led
@@ -57,12 +62,32 @@ int main()
         // ssd1306_update();
 
         // drawString (test)
-        int i = 15;
-        char message[50]; 
-        sprintf(message, "my var = %d", i); 
+        // int i = 15;
+        // char message[50]; 
+        // sprintf(message, "my var = %d", i); 
 
+        // ssd1306_clear();
+        // drawString(20,10,message); 
+        // ssd1306_update();
+
+        // read ADC voltage + display voltage and FPS
+        // read adc and convert to voltage
+        uint16_t adc_value = adc_read();
+        float voltage = adc_value * (3.3f / 4095.0f);
+
+        // get end time for FPS calc
+        unsigned int t_end = to_us_since_boot(get_absolute_time());
+        float fps = 1000000.0f / (t_end - t_start);
+        t_start = t_end;
+
+        // print to display
         ssd1306_clear();
-        drawString(20,10,message); 
+        // print voltage to first line of display
+        sprintf(message, "ADC: %d", adc_value);
+        drawString(0,0,message);
+        // print fps to second line of display
+        sprintf(message, "FPS: %.2f", fps);
+        drawString(0,24,message);
         ssd1306_update();
     }
 }
