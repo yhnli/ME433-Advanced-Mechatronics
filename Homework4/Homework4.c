@@ -26,8 +26,8 @@ int main()
     adc_gpio_init(26);  
     adc_select_input(0);
 
-    // I2C Initialisation. Using it at 400Khz.
-    i2c_init(I2C_PORT, 400*1000);
+    // I2C Initialisation
+    i2c_init(I2C_PORT, 1700*1000);
     
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
@@ -36,10 +36,6 @@ int main()
     
     // init display
     ssd1306_setup();
-    char message[50];
-
-    // get start time for FPS calc
-    unsigned int t_start = to_us_since_boot(get_absolute_time());  
 
     while (true) {
         // blink pico led
@@ -71,23 +67,35 @@ int main()
         // ssd1306_update();
 
         // read ADC voltage + display voltage and FPS
+        // variables init
+        char message[50];
+        uint64_t t_start, t_end;
+
+        // get start time for fps calc
+        t_start = to_us_since_boot(get_absolute_time());  
+
+        ssd1306_clear();
+
         // read adc and convert to voltage
         uint16_t adc_value = adc_read();
         float voltage = adc_value * (3.3f / 4095.0f);
-
-        // get end time for FPS calc
-        unsigned int t_end = to_us_since_boot(get_absolute_time());
-        float fps = 1000000.0f / (t_end - t_start);
-        t_start = t_end;
-
-        // print to display
-        ssd1306_clear();
         // print voltage to first line of display
         sprintf(message, "ADC: %d", adc_value);
         drawString(0,0,message);
+
+        ssd1306_update();
+
+
+        // get end time for FPS calc
+        t_end = to_us_since_boot(get_absolute_time());
+
+        // calc fps and reset
+        float fps = 1000000.0f / (t_end - t_start);
+        
         // print fps to second line of display
         sprintf(message, "FPS: %.2f", fps);
         drawString(0,24,message);
         ssd1306_update();
+
     }
 }
