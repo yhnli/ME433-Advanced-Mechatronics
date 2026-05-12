@@ -3,7 +3,7 @@
 
 // make these functions:
 void drawChar(int x, int y, char c);
-// void drawString(...);
+void drawString(int x, int y, char* message);
 
 // lookup table for all of the ascii characters
 static const char ASCII[96][5] = {

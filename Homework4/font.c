@@ -19,4 +19,11 @@ void drawChar(int x, int y, char c) {
     }
 }
 
-// void drawString(...);
+// draw string beginning at (x,y) position
+void drawString(int x, int y, char* message) {
+    int i = 0;
+    while (message[i] != '\0') {
+        drawChar(x + i * 6, y, message[i]);
+        i++;
+    }
+}

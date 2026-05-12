@@ -20,6 +20,11 @@ int main()
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
+    // adc init
+    adc_init();
+    adc_gpio_init(26);  
+    adc_select_input(0);
+
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
     
@@ -39,16 +44,25 @@ int main()
         sleep_ms(HEARTBEAT_FREQ);
 
         // blink display pixel (test)
-        ssd1306_drawPixel(1, 1, 1);
-        ssd1306_update();
-        sleep_ms(HEARTBEAT_FREQ);
-        ssd1306_drawPixel(1, 1, 0);
-        ssd1306_update();
-        sleep_ms(HEARTBEAT_FREQ);
+        // ssd1306_drawPixel(1, 1, 1);
+        // ssd1306_update();
+        // sleep_ms(HEARTBEAT_FREQ);
+        // ssd1306_drawPixel(1, 1, 0);
+        // ssd1306_update();
+        // sleep_ms(HEARTBEAT_FREQ);
 
         // drawChar (test)
+        // ssd1306_clear();
+        // drawChar(10, 10, 'A');
+        // ssd1306_update();
+
+        // drawString (test)
+        int i = 15;
+        char message[50]; 
+        sprintf(message, "my var = %d", i); 
+
         ssd1306_clear();
-        drawChar(10, 10, 'A');
+        drawString(20,10,message); 
         ssd1306_update();
     }
 }
