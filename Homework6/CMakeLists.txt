@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(Homework6 Homework6.c )
+add_executable(Homework6 Homework6.c usb_descriptors.c)
 
 pico_set_program_name(Homework6 "Homework6")
 pico_set_program_version(Homework6 "0.1")
@@ -56,6 +56,10 @@ target_include_directories(Homework6 PRIVATE
 # Add any user requested libraries
 target_link_libraries(Homework6 
         hardware_i2c
+        tinyusb_device
+        tinyusb_board
+        hardware_i2c
+        hardware_gpio
         )
 
 pico_add_extra_outputs(Homework6)
