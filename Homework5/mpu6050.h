@@ -4,11 +4,6 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
-// I2C defines
-#define IMU_PORT     i2c0
-#define IMU_SDA      4
-#define IMU_SCL      5
-
 // MPU6050 I2C address (AD0 pin low)
 #define MPU6050_ADDR 0x68
 
@@ -44,7 +39,6 @@ typedef struct {
 } mpu6050_data_t;
 
 // function prototypes
-void mpu6050_write_reg(uint8_t reg, uint8_t value);
 void mpu6050_init(void);
 void mpu6050_read(mpu6050_data_t *out);
 
