@@ -1,159 +1,121 @@
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import csv
-
-# ### HELPER FUNCTIONS ###
-# # function to read data from csv files
-# def read_csv(filename):
-#     # data containers
-#     time = data[:, 0]
-#     signal = data[:, 1]
-
-#     with open(filename, 'r') as f:
-#         # open csv file
-#         reader = csv.reader(f)
-        
-#         for row in reader:
-#             # read the rows 1 one by one
-#             time.append(float(row[0])) 
-#             signal.append(float(row[1]))
-
-#     return np.array(time), np.array(signal)
-
-# # function to compute fft 
-# def compute_fft(data, sample_rate):
-#     n = len(data) # length of the signal
-#     k = np.arange(n)
-#     T = n/sample_rate
-#     frq = k/T # two sides frequency range
-#     frq = frq[range(int(n/2))] # one side frequency range
-#     Y = np.fft.fft(data)/n # fft computing and normalization
-#     Y = Y[range(int(n/2))]
-
-#     return frq, Y
-
-# # function to apply low-pass IIR filter
-# def low_pass_filter(signal, A, B):
-#     filtered_signal = np.zeros_like(signal)
-#     filtered_signal[0] = signal[0] 
-
-#     for i in range(1, len(signal)):
-#         filtered_signal[i] = A * filtered_signal[i-1] + B * signal[i]
-
-#     return filtered_signal
-
-# # csv reads
-# A1, A2 = read_csv('sigA.csv')
-# B1, B2 = read_csv('sigB.csv')
-# C1, C2 = read_csv('sigC.csv')
-# D1, D2 = read_csv('sigD.csv')
-
-# signals = [
-#     ("A", A1, A2),
-#     ("B", B1, B2),
-#     ("C", C1, C2),
-#     ("D", D1, D2),
-# ]
-
-# # fft (part 5)
-# # plots
-# fig, axs = plt.subplots(4, 2, figsize=(12, 10))
-
-# for i, (name, t, x) in enumerate(signals):
-#     # time-domain plot
-#     axs[i, 0].plot(t, x, lw=0.5)
-#     axs[i, 0].set_title(f"Signal {name}")
-#     axs[i, 0].set_xlabel("Time")
-#     axs[i, 0].set_ylabel("Amplitude")
-
-#     # frequency-domain plot
-#     frq, Y = compute_fft(x, 1000)
-#     axs[i, 1].loglog(frq, abs(Y), lw=0.5)
-#     axs[i, 1].set_title(f"FFT of Signal {name}")
-#     axs[i, 1].set_xlabel("Freq (Hz)")
-#     axs[i, 1].set_ylabel("|Y(freq)|")
-
-# plt.show()
-
-# # filtering (part 6)
-# A, B = 0.9, 0.1  
-# filtered_sig = [
-#     low_pass_filter(A2, A, B),
-#     low_pass_filter(B2, A, B),
-#     low_pass_filter(C2, A, B),
-#     low_pass_filter(D2, A, B),
-# ]
-
-# # plots 
-# fig, axs = plt.subplots(4, 1, figsize=(12, 10))
-# for i, (name, t, x) in enumerate(signals):
-#     frq_raw, Y_raw = compute_fft(x, 1000)
-#     frq, Y = compute_fft(filtered_sig[i], 1000)
-#     axs[i].loglog(frq_raw, abs(Y_raw), color='black', lw=0.5, label='Unfiltered')
-#     axs[i].loglog(frq,     abs(Y),     color='red',   lw=0.5, label='Filtered')
-#     axs[i].set_title(f"Signal {name}  (A={A}, B={B})")
-#     axs[i].set_xlabel("Freq (Hz)")
-#     axs[i].set_ylabel("|Y(freq)|")
-#     axs[i].legend()
-
-# plt.show()
-
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
-# ===== Choose file =====
-filename = "sigD.csv"
+### helper filters ###
+# read data
+def read_csv(file_name, t, signal):
+    with open(file_name) as f:
+        # open the csv file
+        reader = csv.reader(f)
+        for row in reader:
+            # read the rows 1 one by one
+            t.append(float(row[0])) # leftmost column
+            signal.append(float(row[1])) # second column
 
-# ===== Load CSV =====
-data = np.loadtxt(filename, delimiter=",")
+# fft
+def calc_fft(t, signal):
+    Fs = 10000 # sample rate
+    Ts = 1.0/Fs; # sampling interval
+    ts = np.arange(0,t[-1],Ts) # time vector
+    y = np.interp(ts, t, signal) # the data to make the fft from
+    n = len(y) # length of the signal
+    k = np.arange(n)
+    T = n/Fs
+    frq = k/T # two sides frequency range
+    frq = frq[range(int(n/2))] # one side frequency range
+    Y = np.fft.fft(y)/n # fft computing and normalization
+    Y = Y[range(int(n/2))]
 
-time = data[:, 0]
-signal = data[:, 1]
+    # plot
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(ts, y, 'b')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Amplitude')
+    ax2.loglog(frq, abs(Y), 'b')
+    ax2.set_xlabel('Freq (Hz)')
+    ax2.set_ylabel('|Y(freq)|')
+    plt.show()
 
-# ===== Sample info =====
-N = len(signal)
-dt = time[1] - time[0]
+# moving average filter
+def moving_avg_filter(signal, x):
+    signal = np.asarray(signal, dtype=float)
+    out = np.empty(len(signal))
+    for i in range(len(signal)):
+        start = max(0, i - x + 1)
+        out[i] = signal[start : i + 1].mean()
+    return out
 
-# ===== Original FFT =====
-fft_original = np.abs(np.fft.fft(signal))
-freqs = np.fft.fftfreq(N, dt)
+# iir filter
+def iir_filter(data, A, B):
+    datanew = []
+    y_prev = 0
+    for i in range(len(data)):
+        y = A * data[i] + (B) * y_prev
+        datanew.append(y)
+        y_prev = y
+    return datanew
 
-half = N // 2
-freqs_half = freqs[:half]
-fft_original_half = fft_original[:half]
+# fir filter
+def fir_filter(data, h):
+    n = len(data)
+    m = len(h)
+    datanew = []
+    for i in range(n):
+        y = 0.0
+        for j in range(m):
+            if i - j >= 0:
+                y += h[j] * data[i - j]
+        datanew.append(y)
+    return datanew
 
-# ===== IIR Filter =====
-A = 0.95
-B = 0.05   # A + B must equal 1
+# plot filtered signal
+def plot_filtered(time, original, filtered, title):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.suptitle(title)
+    ax.plot(time, original, 'k', label='Unfiltered')
+    ax.plot(time[:len(filtered)], filtered, 'r', label='Filtered')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Amplitude')
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
 
-filtered = np.zeros(len(signal))
-filtered[0] = signal[0]
 
-for i in range(1, len(signal)):
-    filtered[i] = A * filtered[i - 1] + B * signal[i]
+# read signal csv files
+t_A, signal_A = [], []
+t_B, signal_B = [], []
+t_C, signal_C = [], []
+t_D, signal_D = [], []
+read_csv('sigA.csv', t_A, signal_A)
+read_csv('sigB.csv', t_B, signal_B)
+read_csv('sigC.csv', t_C, signal_C)
+read_csv('sigD.csv', t_D, signal_D)
 
-# ===== Filtered FFT =====
-fft_filtered = np.abs(np.fft.fft(filtered))
-fft_filtered_half = fft_filtered[:half]
+# calculate and plot fft
+# calc_fft(t_A, signal_A)
+# calc_fft(t_B, signal_B)
+# calc_fft(t_C, signal_C)
+# calc_fft(t_D, signal_D)
 
-# ===== Plot =====
-plt.figure(figsize=(10, 7))
+# calculate and plot moving average filter
+maf_A = moving_avg_filter(signal_A, 20)
+maf_B = moving_avg_filter(signal_B, 12)
+maf_C = moving_avg_filter(signal_C, 10)
+maf_D = moving_avg_filter(signal_D, 8)
 
-plt.subplot(2, 1, 1)
-plt.plot(time, signal, color="black", label="unfiltered")
-plt.plot(time, filtered, color="red", label="filtered")
-plt.title(f"{filename} IIR Filter, A={A}, B={B}")
-plt.xlabel("Time")
-plt.ylabel("Signal")
-plt.legend()
+# plot_filtered(t_A, signal_A, maf_A, 'sigA - Moving Average Filter (X = 20 points)')
+# plot_filtered(t_B, signal_B, maf_B, 'sigB - Moving Average Filter (X = 12 points)')
+# plot_filtered(t_C, signal_C, maf_C, 'sigC - Moving Average Filter (X = 10 points)')
+# plot_filtered(t_D, signal_D, maf_D, 'sigD - Moving Average Filter (X = 8 points)')
 
-plt.subplot(2, 1, 2)
-plt.plot(freqs_half, fft_original_half, color="black", label="unfiltered FFT")
-plt.plot(freqs_half, fft_filtered_half, color="red", label="filtered FFT")
-plt.title("FFT Comparison")
-plt.xlabel("Frequency")
-plt.ylabel("Magnitude")
-plt.legend()
+# calculate and plot iir filter
+iir_A = iir_filter(signal_A, 0.1, 0.9)
+iir_B = iir_filter(signal_B, 0.4, 0.6)
+iir_C = iir_filter(signal_C, 0.1, 0.9)
+iir_D = iir_filter(signal_D, 0.1, 0.9)
 
-plt.tight_layout()
-plt.show()
+plot_filtered(t_A, signal_A, iir_A, 'sigA - IIR Filter (A = 0.1, B = 0.9)')
+plot_filtered(t_B, signal_B, iir_B, 'sigB - IIR Filter (A = 0.4, B = 0.6)')
+plot_filtered(t_C, signal_C, iir_C, 'sigC - IIR Filter (A = 0.1, B = 0.9)')
+plot_filtered(t_D, signal_D, iir_D, 'sigD - IIR Filter (A = 0.1, B = 0.9)')
