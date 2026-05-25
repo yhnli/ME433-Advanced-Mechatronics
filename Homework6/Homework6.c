@@ -18,8 +18,8 @@
 #define I2C_SCL 5
 
 // GPIO pin defines
-#define BTN_PIN 14
-#define LED_PIN 15
+#define BTN_PIN 16
+#define LED_PIN 17
 
 // Mouse mode defines
 static bool remote_mode = false;
@@ -136,7 +136,7 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
 
         tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycode);
         has_keyboard_key = true;
-      }else
+      } else
       {
         // send empty key report if previously has key pressed
         if (has_keyboard_key) tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, NULL);
@@ -147,12 +147,22 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
 
     case REPORT_ID_MOUSE:
     {
-      int8_t const delta = 5;
-
-      // no button, right + down, no scroll, no pan
-      tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta, delta, 0, 0);
+        if (remote_mode) {
+            const float radius = 20.0f;
+            int8_t delta_x = (int8_t)(radius * cosf(angle));
+            int8_t delta_y = (int8_t)(radius * sinf(angle));
+            tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_x, delta_y, 0, 0);
+            angle += 0.1f;
+            if (angle >= 2.0f * 3.14159f) angle -= 2.0f * 3.14159f;
+        }
+        else {
+            float accel[3], gyro[3], temp;
+            mpu6050_read(accel, gyro, &temp);
+            tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, 10*(int8_t)accel[0], -10*(int8_t)accel[1], 0, 0);
+            sleep_ms(10);
+        }
+        break;
     }
-    break;
 
     case REPORT_ID_CONSUMER_CONTROL:
     {
