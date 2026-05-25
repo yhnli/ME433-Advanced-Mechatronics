@@ -4,7 +4,7 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
-// MPU6050 I2C address (AD0 pin low)
+// MPU6050 I2C address 
 #define MPU6050_ADDR 0x68
 
 // config registers
@@ -31,15 +31,8 @@
 #define GYRO_ZOUT_L  0x48
 #define WHO_AM_I     0x75
 
-// data structure
-typedef struct {
-    float accel_x, accel_y, accel_z;   // g
-    float gyro_x,  gyro_y,  gyro_z;    // degrees/s
-    float temp;                          // degrees C
-} mpu6050_data_t;
-
 // function prototypes
 void mpu6050_init(void);
-void mpu6050_read(mpu6050_data_t *out);
+void mpu6050_read(float *accel, float *gyro, float *temp);
 
 #endif // MPU6050_H
