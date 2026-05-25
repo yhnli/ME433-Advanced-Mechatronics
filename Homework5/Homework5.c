@@ -17,17 +17,13 @@
 #define SCALE 13 
 
 // draw line from (x0,y0) to (x1,y1)
-void drawLine(int x0, int y0, int x1, int y1, unsigned char color) {
-    int dx  =  abs(x1 - x0);
-    int sx  = (x0 < x1) ? 1 : -1;
-    int dy  = -abs(y1 - y0);
-    int sy  = (y0 < y1) ? 1 : -1;
+void draw_line(int x0, int y0, int x1, int y1) {
+    int dx =  abs(x1-x0), sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1-y0), sy = y0 < y1 ? 1 : -1;
     int err = dx + dy;
- 
-    while (1) {
-        if (x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 32) {
-            ssd1306_drawPixel((unsigned char)x0, (unsigned char)y0, color);
-        }
+
+    while (true) {
+        ssd1306_drawPixel(x0, y0, 1);
         if (x0 == x1 && y0 == y1) break;
         int e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
@@ -52,16 +48,21 @@ int main()
 
     // display initialization
     ssd1306_setup();
+    ssd1306_clear();
+    ssd1306_update();
     
-    mpu6050_data_t data;
-    char msg1[24], msg2[24];
+    // variables init
+    float accel[3];
+    float gyro[3];
+    float temp;
 
     while (true) {
         // read mpu6050
-        mpu6050_read(&data);
-        printf("Accel (g):  X=%.3f  Y=%.3f  Z=%.3f\n", data.accel_x, data.accel_y, data.accel_z);
-        printf("Gyro (d/s): X=%.3f  Y=%.3f  Z=%.3f\n", data.gyro_x,  data.gyro_y,  data.gyro_z);
-        printf("Temp (C):   %.2f\n\n",                  data.temp);
+        mpu6050_read(accel, gyro, &temp);
+        // test to see if work in serial monitor
+        printf("Accel (g):  X=%.3f  Y=%.3f  Z=%.3f\n", accel[0], accel[1], accel[2]);
+        printf("Gyro (d/s): X=%.3f  Y=%.3f  Z=%.3f\n", gyro[0],  gyro[1],  gyro[2]);
+        printf("Temp (C): %.2f\n\n", temp);
         sleep_ms(100);
         
         // test display
