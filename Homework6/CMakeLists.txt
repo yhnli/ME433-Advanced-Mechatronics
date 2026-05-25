@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(Homework6 Homework6.c usb_descriptors.c)
+add_executable(Homework6 Homework6.c usb_descriptors.c mpu6050.c)
 
 pico_set_program_name(Homework6 "Homework6")
 pico_set_program_version(Homework6 "0.1")

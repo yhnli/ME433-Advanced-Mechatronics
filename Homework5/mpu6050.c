@@ -3,7 +3,7 @@
 
 // mpu6050 init function
 void mpu6050_init(void) {
-     uint8_t buf0[2]; 
+    uint8_t buf0[2]; 
     buf0[0] = PWR_MGMT_1;
     buf0[1] = 0x00;
     i2c_write_blocking(i2c_default, MPU6050_ADDR, buf0, 2, false);
