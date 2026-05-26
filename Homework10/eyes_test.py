@@ -1,5 +1,6 @@
 import math
 import pygame
+import pgzrun
 
 WIDTH = 600
 HEIGHT = 600
@@ -22,3 +23,4 @@ def draw():
    draw_eye(WIDTH/3, HEIGHT/2)
    draw_eye(WIDTH*2/3, HEIGHT/2)
 
+pgzrun.go()
