@@ -12,9 +12,9 @@
 #define I2C_SCL 5
 
 // display defines
-#define CX  64   // screen center x
-#define CY  16   // screen center y 
-#define SCALE 13 
+#define CENTER_X  64   // screen center x
+#define CENTER_Y  16   // screen center y 
+#define SCALE 1000 
 
 // draw line from (x0,y0) to (x1,y1)
 void draw_line(int x0, int y0, int x1, int y1) {
@@ -59,15 +59,32 @@ int main()
     while (true) {
         // read mpu6050
         mpu6050_read(accel, gyro, &temp);
-        // test to see if work in serial monitor
-        printf("Accel (g):  X=%.3f  Y=%.3f  Z=%.3f\n", accel[0], accel[1], accel[2]);
-        printf("Gyro (d/s): X=%.3f  Y=%.3f  Z=%.3f\n", gyro[0],  gyro[1],  gyro[2]);
-        printf("Temp (C): %.2f\n\n", temp);
-        sleep_ms(100);
+        float accel_x = -accel[0];
+        float accel_y = accel[1];
+        // // test to see if work in serial monitor
+        // printf("Accel (g):  X=%.3f  Y=%.3f  Z=%.3f\n", accel[0], accel[1], accel[2]);
+        // printf("Gyro (d/s): X=%.3f  Y=%.3f  Z=%.3f\n", gyro[0],  gyro[1],  gyro[2]);
+        // printf("Temp (C): %.2f\n\n", temp);
+        // sleep_ms(100);
         
-        // test display
+        // // test display
+        // ssd1306_clear();
+        // drawChar(CENTER_X, CENTER_Y, 'A');
+        // ssd1306_update();
+
+        // scale to screen size
+        int x = (int)(accel_x * SCALE) + CENTER_X;
+        int y = (int)(accel_y * SCALE) + CENTER_Y;
+
+        // lock to screen size
+        if (x < 0) x = 0;
+        if (x > 127) x = 127;
+        if (y < 0) y = 0;
+        if (y > 31) y = 31;
+
+        // clear display and draw line
         ssd1306_clear();
-        drawChar(10, 10, 'A');
+        draw_line(CENTER_X, CENTER_Y, x, y);
         ssd1306_update();
     }
 }
