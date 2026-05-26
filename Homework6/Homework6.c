@@ -43,6 +43,18 @@ static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 void led_blinking_task(void);
 void hid_task(void);
 
+// accel to mouse speed
+static int8_t accel_to_speed(float accel) {
+    float v = fabsf(accel);
+    int8_t spd;
+    if      (v > 0.6f)  spd = 8;
+    else if (v > 0.3f)  spd = 4;
+    else if (v > 0.1f)  spd = 2;
+    else if (v > 0.05f) spd = 1;
+    else                spd = 0;
+    return (accel < 0.0f) ? -spd : spd;
+}
+
 
 int main()
 {
@@ -60,25 +72,35 @@ int main()
     // mpu6050 init
     mpu6050_init();
 
-    // Initialise USB HID
+    // init USB HID
     tud_init(BOARD_TUD_RHPORT);
 
     if (board_init_after_tusb) {
         board_init_after_tusb();
     }
 
-
     // GPIO Initialisation
     gpio_init(BTN_PIN);
     gpio_set_dir(BTN_PIN, GPIO_IN);
 
     gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT); 
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_put(LED_PIN, false);  
     
-    
+    static bool last_btn_state = false;
+
     while (true) {
         tud_task();
         led_blinking_task();
+
+        bool cur_btn_state = !gpio_get(BTN_PIN);  
+        if (cur_btn_state && !last_btn_state) {
+            remote_mode = !remote_mode;
+            // LED on = remote mode
+            gpio_put(LED_PIN, remote_mode);  
+        }
+        last_btn_state = cur_btn_state;
+
         hid_task();
     }
 }
@@ -148,18 +170,22 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
     case REPORT_ID_MOUSE:
     {
         if (remote_mode) {
-            const float radius = 20.0f;
+            // Remote working mode: move mouse in a slow circle
+            const float radius = 5.0f;
             int8_t delta_x = (int8_t)(radius * cosf(angle));
             int8_t delta_y = (int8_t)(radius * sinf(angle));
             tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_x, delta_y, 0, 0);
-            angle += 0.1f;
+            angle += 0.05f;
             if (angle >= 2.0f * 3.14159f) angle -= 2.0f * 3.14159f;
-        }
+        } 
         else {
             float accel[3], gyro[3], temp;
             mpu6050_read(accel, gyro, &temp);
-            tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, 10*(int8_t)accel[0], -10*(int8_t)accel[1], 0, 0);
-            sleep_ms(10);
+
+            int8_t dx = accel_to_speed(-accel[0]);
+            int8_t dy = accel_to_speed(accel[1]);  
+
+            tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, dx, dy, 0, 0);
         }
         break;
     }
@@ -239,7 +265,7 @@ void hid_task(void)
   }else
   {
     // Send the 1st of report chain, the rest will be sent by tud_hid_report_complete_cb()
-    send_hid_report(REPORT_ID_KEYBOARD, btn);
+    send_hid_report(REPORT_ID_MOUSE, btn);
   }
 }
 
