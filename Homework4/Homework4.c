@@ -45,12 +45,12 @@ int main()
         sleep_ms(HEARTBEAT_FREQ);
 
         // blink display pixel (test)
-        // ssd1306_drawPixel(1, 1, 1);
-        // ssd1306_update();
-        // sleep_ms(HEARTBEAT_FREQ);
-        // ssd1306_drawPixel(1, 1, 0);
-        // ssd1306_update();
-        // sleep_ms(HEARTBEAT_FREQ);
+        ssd1306_drawPixel(1, 1, 1);
+        ssd1306_update();
+        sleep_ms(HEARTBEAT_FREQ);
+        ssd1306_drawPixel(1, 1, 0);
+        ssd1306_update();
+        sleep_ms(HEARTBEAT_FREQ);
 
         // drawChar (test)
         // ssd1306_clear();
@@ -68,34 +68,33 @@ int main()
 
         // read ADC voltage + display voltage and FPS
         // variables init
-        char message[50];
-        uint64_t t_start, t_end;
+        // char message[50];
+        // uint64_t t_start, t_end;
 
-        // get start time for fps calc
-        t_start = to_us_since_boot(get_absolute_time());  
+        // // get start time for fps calc
+        // t_start = to_us_since_boot(get_absolute_time());  
 
-        ssd1306_clear();
+        // ssd1306_clear();
 
-        // read adc and convert to voltage
-        uint16_t adc_value = adc_read();
-        float voltage = adc_value * (3.3f / 4095.0f);
-        // print voltage to first line of display
-        sprintf(message, "ADC: %d", adc_value);
-        drawString(0,0,message);
+        // // read adc and convert to voltage
+        // uint16_t adc_value = adc_read();
+        // float voltage = adc_value * (3.3f / 4095.0f);
+        // // print voltage to first line of display
+        // sprintf(message, "ADC: %d", adc_value);
+        // drawString(0,0,message);
 
-        ssd1306_update();
+        // ssd1306_update();
 
 
-        // get end time for FPS calc
-        t_end = to_us_since_boot(get_absolute_time());
+        // // get end time for FPS calc
+        // t_end = to_us_since_boot(get_absolute_time());
 
-        // calc fps and reset
-        float fps = 1000000.0f / (t_end - t_start);
+        // // calc fps and reset
+        // float fps = 1000000.0f / (t_end - t_start);
         
-        // print fps to second line of display
-        sprintf(message, "FPS: %.2f", fps);
-        drawString(0,24,message);
-        ssd1306_update();
-
+        // // print fps to second line of display
+        // sprintf(message, "FPS: %.2f", fps);
+        // drawString(0,24,message);
+        // ssd1306_update();
     }
 }
