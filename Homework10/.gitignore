@@ -1,0 +1,8 @@
+build
+!.vscode/*
+venv/
+.venv/
+env/
+.env/
+bin/
+lib/
