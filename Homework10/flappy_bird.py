@@ -1,37 +1,28 @@
 # flappy bird sample code and assets from https://github.com/clear-code-projects/FlappyBird_Python
-# Pico button integration: reads "FLAP\n" from serial port (GP16 button → GND)
+# Pico button on GP16, streams "(btn_state)\n" every 10ms
 
 import pygame, sys, random, threading
- 
-# ── Serial configuration ──────────────────────────────────────────────────────
-PICO_PORT = '/dev/tty.usbmodem101'   # ← change to your port
-PICO_BAUD = 115200
- 
-pico_flap = False            
-serial_connected = False
- 
-def serial_reader():
-    """Background thread: reads lines from Pico and sets pico_flap on 'FLAP'."""
-    global pico_flap, serial_connected
-    try:
-        import serial
-        with serial.Serial(PICO_PORT, PICO_BAUD, timeout=1) as ser:
-            serial_connected = True
-            print(f"[Pico] Connected on {PICO_PORT}")
-            while True:
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
-                if line == 'FLAP':
-                    pico_flap = True
-    except ImportError:
-        print("[Pico] pyserial not installed — run: pip install pyserial")
-    except Exception as e:
-        print(f"[Pico] Serial error: {e} — falling back to spacebar only")
- 
-# Start serial thread (daemon so it dies with the game)
-t = threading.Thread(target=serial_reader, daemon=True)
-t.start()
+import serial
+import serial.tools.list_ports
 
-# ── Helper to consume the flap flag ──────────────────────────────────────────
+SERIAL_BAUD = 115200
+
+# ── Auto-detect Pico port ─────────────────────────────────────────────────────
+def find_pico_port():
+    for port in serial.tools.list_ports.comports():
+        hwid = (port.hwid or "").lower()
+        desc = (port.description or "").lower()
+        if "2e8a" in hwid or "pico" in desc or "raspberry" in desc:
+            return port.device
+    return None
+
+# ── Shared state ──────────────────────────────────────────────────────────────
+pico_flap = False
+
+def trigger_jump():
+    global pico_flap
+    pico_flap = True
+
 def consume_flap():
     global pico_flap
     if pico_flap:
@@ -39,99 +30,133 @@ def consume_flap():
         return True
     return False
 
+# ── Serial thread ─────────────────────────────────────────────────────────────
+def serial_thread(port: str):
+    """Background thread: reads serial lines and sets jump flag on rising edge."""
+    print(f"[serial] Connecting to {port} at {SERIAL_BAUD} baud...")
+    try:
+        ser = serial.Serial(port, SERIAL_BAUD, timeout=1)
+    except serial.SerialException as e:
+        print(f"[serial] ERROR — {e}")
+        print("[serial] Falling back to keyboard-only mode.")
+        return
+    print("[serial] Connected.")
+    prev_button = 0
+    while True:
+        try:
+            raw = ser.readline()
+            if not raw:
+                continue
+            line = raw.decode("utf-8", errors="ignore").strip()
+            # Expected format: (1) or (0)
+            if line.startswith("(") and line.endswith(")"):
+                try:
+                    button = int(line[1:-1].strip())
+                    # Rising edge: 0 → 1
+                    if button == 1 and prev_button == 0:
+                        trigger_jump()
+                    prev_button = button
+                except (ValueError, IndexError):
+                    pass  # ignore malformed lines
+        except (serial.SerialException, OSError):
+            print("[serial] Connection lost.")
+            break
+
+# Start serial thread
+port = find_pico_port()
+if port:
+    threading.Thread(target=serial_thread, args=(port,), daemon=True).start()
+else:
+    print("[serial] Pico not found — running in keyboard-only mode.")
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 def draw_floor():
-	screen.blit(floor_surface,(floor_x_pos,900))
-	screen.blit(floor_surface,(floor_x_pos + 576,900))
+    screen.blit(floor_surface,(floor_x_pos,900))
+    screen.blit(floor_surface,(floor_x_pos + 576,900))
 
 def create_pipe():
-	random_pipe_pos = random.choice(pipe_height)
-	bottom_pipe = pipe_surface.get_rect(midtop = (700,random_pipe_pos))
-	top_pipe = pipe_surface.get_rect(midbottom = (700,random_pipe_pos - 300))
-	return bottom_pipe,top_pipe
+    random_pipe_pos = random.choice(pipe_height)
+    bottom_pipe = pipe_surface.get_rect(midtop = (700,random_pipe_pos))
+    top_pipe = pipe_surface.get_rect(midbottom = (700,random_pipe_pos - 300))
+    return bottom_pipe,top_pipe
 
 def move_pipes(pipes):
-	for pipe in pipes:
-		pipe.centerx -= 5
-	visible_pipes = [pipe for pipe in pipes if pipe.right > -50]
-	return visible_pipes
+    for pipe in pipes:
+        pipe.centerx -= 5
+    visible_pipes = [pipe for pipe in pipes if pipe.right > -50]
+    return visible_pipes
 
 def draw_pipes(pipes):
-	for pipe in pipes:
-		if pipe.bottom >= 1024:
-			screen.blit(pipe_surface,pipe)
-		else:
-			flip_pipe = pygame.transform.flip(pipe_surface,False,True)
-			screen.blit(flip_pipe,pipe)
+    for pipe in pipes:
+        if pipe.bottom >= 1024:
+            screen.blit(pipe_surface,pipe)
+        else:
+            flip_pipe = pygame.transform.flip(pipe_surface,False,True)
+            screen.blit(flip_pipe,pipe)
 
 def check_collision(pipes):
-	global can_score
-	for pipe in pipes:
-		if bird_rect.colliderect(pipe):
-			death_sound.play()
-			can_score = True
-			return False
-
-	if bird_rect.top <= -100 or bird_rect.bottom >= 900:
-		can_score = True
-		return False
-
-	return True
+    global can_score
+    for pipe in pipes:
+        if bird_rect.colliderect(pipe):
+            death_sound.play()
+            can_score = True
+            return False
+    if bird_rect.top <= -100 or bird_rect.bottom >= 900:
+        can_score = True
+        return False
+    return True
 
 def rotate_bird(bird):
-	new_bird = pygame.transform.rotozoom(bird,-bird_movement * 3,1)
-	return new_bird
+    new_bird = pygame.transform.rotozoom(bird,-bird_movement * 3,1)
+    return new_bird
 
 def bird_animation():
-	new_bird = bird_frames[bird_index]
-	new_bird_rect = new_bird.get_rect(center = (100,bird_rect.centery))
-	return new_bird,new_bird_rect
+    new_bird = bird_frames[bird_index]
+    new_bird_rect = new_bird.get_rect(center = (100,bird_rect.centery))
+    return new_bird,new_bird_rect
 
 def score_display(game_state):
-	if game_state == 'main_game':
-		score_surface = game_font.render(str(int(score)),True,(255,255,255))
-		score_rect = score_surface.get_rect(center = (288,100))
-		screen.blit(score_surface,score_rect)
-	if game_state == 'game_over':
-		score_surface = game_font.render(f'Score: {int(score)}' ,True,(255,255,255))
-		score_rect = score_surface.get_rect(center = (288,100))
-		screen.blit(score_surface,score_rect)
-
-		high_score_surface = game_font.render(f'High score: {int(high_score)}',True,(255,255,255))
-		high_score_rect = high_score_surface.get_rect(center = (288,850))
-		screen.blit(high_score_surface,high_score_rect)
+    if game_state == 'main_game':
+        score_surface = game_font.render(str(int(score)),True,(255,255,255))
+        score_rect = score_surface.get_rect(center = (288,100))
+        screen.blit(score_surface,score_rect)
+    if game_state == 'game_over':
+        score_surface = game_font.render(f'Score: {int(score)}',True,(255,255,255))
+        score_rect = score_surface.get_rect(center = (288,100))
+        screen.blit(score_surface,score_rect)
+        high_score_surface = game_font.render(f'High score: {int(high_score)}',True,(255,255,255))
+        high_score_rect = high_score_surface.get_rect(center = (288,850))
+        screen.blit(high_score_surface,high_score_rect)
 
 def update_score(score, high_score):
-	if score > high_score:
-		high_score = score
-	return high_score
+    if score > high_score:
+        high_score = score
+    return high_score
 
 def pipe_score_check():
-	global score, can_score 
-	
-	if pipe_list:
-		for pipe in pipe_list:
-			if 95 < pipe.centerx < 105 and can_score:
-				score += 1
-				score_sound.play()
-				can_score = False
-			if pipe.centerx < 0:
-				can_score = True
+    global score, can_score
+    if pipe_list:
+        for pipe in pipe_list:
+            if 95 < pipe.centerx < 105 and can_score:
+                score += 1
+                score_sound.play()
+                can_score = False
+            if pipe.centerx < 0:
+                can_score = True
 
-#pygame.mixer.pre_init(frequency = 44100, size = 16, channels = 2, buffer = 1024)
 pygame.init()
 screen = pygame.display.set_mode((576,1024))
 clock = pygame.time.Clock()
 game_font = pygame.font.Font('04B_19.ttf',40)
 
-# Game Variables
 gravity = 0.35
 bird_movement = 0
 game_active = True
 score = 0
 high_score = 0
 can_score = True
+
 bg_surface = pygame.image.load('assets/background-day.png').convert()
 bg_surface = pygame.transform.scale2x(bg_surface)
 
@@ -163,71 +188,63 @@ game_over_rect = game_over_surface.get_rect(center = (288,512))
 flap_sound = pygame.mixer.Sound('sound/sfx_wing.wav')
 death_sound = pygame.mixer.Sound('sound/sfx_hit.wav')
 score_sound = pygame.mixer.Sound('sound/sfx_point.wav')
-score_sound_countdown = 100
 SCOREEVENT = pygame.USEREVENT + 2
 pygame.time.set_timer(SCOREEVENT,100)
 
 while True:
-	flap_triggered = consume_flap()
-	
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			pygame.quit()
-			sys.exit()
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_SPACE:
-				flap_triggered = True   # merge spacebar into same flag
+    flap_triggered = consume_flap()
 
-		if event.type == SPAWNPIPE:
-			pipe_list.extend(create_pipe())
- 
-		if event.type == BIRDFLAP:
-			if bird_index < 2:
-				bird_index += 1
-			else:
-				bird_index = 0
-			bird_surface,bird_rect = bird_animation()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                flap_triggered = True
 
-	# ── Act on flap (Pico button OR spacebar) ─────────────────────────────────
-	if flap_triggered:
-		if game_active:
-			bird_movement = 0
-			bird_movement -= 12
-			flap_sound.play()
-		else:
-			game_active = True
-			pipe_list.clear()
-			bird_rect.center = (100,512)
-			bird_movement = 0
-			score = 0
-		
-	screen.blit(bg_surface,(0,0))
+        if event.type == SPAWNPIPE:
+            pipe_list.extend(create_pipe())
 
-	if game_active:
-		# Bird
-		bird_movement += gravity
-		rotated_bird = rotate_bird(bird_surface)
-		bird_rect.centery += bird_movement
-		screen.blit(rotated_bird,bird_rect)
-		game_active = check_collision(pipe_list)
+        if event.type == BIRDFLAP:
+            if bird_index < 2:
+                bird_index += 1
+            else:
+                bird_index = 0
+            bird_surface,bird_rect = bird_animation()
 
-		# Pipes
-		pipe_list = move_pipes(pipe_list)
-		draw_pipes(pipe_list)
-		
-		# Score
-		pipe_score_check()
-		score_display('main_game')
-	else:
-		screen.blit(game_over_surface,game_over_rect)
-		high_score = update_score(score,high_score)
-		score_display('game_over')
+    if flap_triggered:
+        if game_active:
+            bird_movement = 0
+            bird_movement -= 12
+            flap_sound.play()
+        else:
+            game_active = True
+            pipe_list.clear()
+            bird_rect.center = (100,512)
+            bird_movement = 0
+            score = 0
 
-	# Floor
-	floor_x_pos -= 1
-	draw_floor()
-	if floor_x_pos <= -576:
-		floor_x_pos = 0
-	
-	pygame.display.update()
-	clock.tick(120)
+    screen.blit(bg_surface,(0,0))
+
+    if game_active:
+        bird_movement += gravity
+        rotated_bird = rotate_bird(bird_surface)
+        bird_rect.centery += bird_movement
+        screen.blit(rotated_bird,bird_rect)
+        game_active = check_collision(pipe_list)
+        pipe_list = move_pipes(pipe_list)
+        draw_pipes(pipe_list)
+        pipe_score_check()
+        score_display('main_game')
+    else:
+        screen.blit(game_over_surface,game_over_rect)
+        high_score = update_score(score,high_score)
+        score_display('game_over')
+
+    floor_x_pos -= 1
+    draw_floor()
+    if floor_x_pos <= -576:
+        floor_x_pos = 0
+
+    pygame.display.update()
+    clock.tick(120)
