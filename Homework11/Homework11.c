@@ -34,7 +34,15 @@ int main()
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
 
     while (true) {
-        printf("Hello, world!\n");
+        // Send string to STM32
+        char pico_msg[] = "Hello from Pico!\r\n";
+        uart_puts(uart0, pico_msg);
+        
+        if (uart_is_readable(uart0)) {
+            char c = uart_getc(uart0);
+            printf("%c", c);
+        }
+
         sleep_ms(1000);
     }
 }
