@@ -1,21 +1,26 @@
-17:22:52 **** Build of configuration Debug for project STM32CubeIDE ****
+18:20:28 **** Incremental Build of configuration Debug for project STM32CubeIDE ****
 make -j7 all 
 arm-none-eabi-gcc "/Users/yuwie/Documents/GitHub/ME433-Advanced-Mechatronics/Homework11/Homework11/Core/Src/main.c" -mcpu=cortex-m0plus -std=gnu11 -g3 -DDEBUG -DUSE_NUCLEO_64 -DUSE_HAL_DRIVER -DSTM32C092xx -c -I../../Core/Inc -I../../Drivers/STM32C0xx_HAL_Driver/Inc -I../../Drivers/STM32C0xx_HAL_Driver/Inc/Legacy -I../../Drivers/BSP/STM32C0xx_Nucleo -I../../Drivers/CMSIS/Device/ST/STM32C0xx/Include -I../../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/main.d" -MT"Application/User/Core/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Application/User/Core/main.o"
+/Users/yuwie/Documents/GitHub/ME433-Advanced-Mechatronics/Homework11/Homework11/Core/Src/main.c: In function 'main':
+/Users/yuwie/Documents/GitHub/ME433-Advanced-Mechatronics/Homework11/Homework11/Core/Src/main.c:137:32: warning: comparison between pointer and integer
+  137 |                   if (rx_msg[i]=="\n"){
+      |                                ^~
+/Users/yuwie/Documents/GitHub/ME433-Advanced-Mechatronics/Homework11/Homework11/Core/Src/main.c:137:32: warning: comparison with string literal results in unspecified behavior [-Waddress]
 arm-none-eabi-gcc -o "STM32CubeIDE.elf" @"objects.list"   -mcpu=cortex-m0plus -T"/Users/yuwie/Documents/GitHub/ME433-Advanced-Mechatronics/Homework11/Homework11/STM32CubeIDE/STM32C092RCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32CubeIDE.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: STM32CubeIDE.elf
  
 arm-none-eabi-size  STM32CubeIDE.elf 
 arm-none-eabi-objdump -h -S STM32CubeIDE.elf  > "STM32CubeIDE.list"
    text	   data	    bss	    dec	    hex	filename
-  12456	    128	   2088	  14672	   3950	STM32CubeIDE.elf
+  16084	    128	   2232	  18444	   480c	STM32CubeIDE.elf
 Finished building: default.size.stdout
  
 Finished building: STM32CubeIDE.list
  
-17:22:56 **** Incremental Build of configuration Debug for project STM32CubeIDE ****
+18:20:51 **** Incremental Build of configuration Debug for project STM32CubeIDE ****
 make -j7 all 
 arm-none-eabi-size  STM32CubeIDE.elf 
    text	   data	    bss	    dec	    hex	filename
-  12456	    128	   2088	  14672	   3950	STM32CubeIDE.elf
+  16084	    128	   2232	  18444	   480c	STM32CubeIDE.elf
 Finished building: default.size.stdout
  
