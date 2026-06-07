@@ -161,3 +161,12 @@ java.lang.NullPointerException: Cannot invoke "org.eclipse.cdt.dsf.gdb.service.I
 
 !ENTRY org.eclipse.cdt.core 1 0 2026-06-06 17:22:25.880
 !MESSAGE Indexed 'STM32CubeIDE' (24 sources, 90 headers) in 1.35 sec: 5,185 declarations; 23,677 references; 0 unresolved inclusions; 3 syntax errors; 2 unresolved names (0.0069%)
+
+!ENTRY org.eclipse.core.jobs 2 2 2026-06-06 18:21:42.348
+!MESSAGE Job found still running after platform shutdown.  Jobs should be canceled by the plugin that scheduled them during shutdown: org.eclipse.cdt.dsf.gdb.service.GDBBackend$MonitorJob RUNNING
+	 at java.base/java.lang.Object.wait0(Native Method)
+	 at java.base/java.lang.Object.wait(Object.java:366)
+	 at java.base/java.lang.Object.wait(Object.java:339)
+	 at org.eclipse.cdt.utils.spawner.Spawner.waitFor(Spawner.java:299)
+	 at org.eclipse.cdt.dsf.gdb.service.GDBBackend$MonitorJob.run(GDBBackend.java:731)
+	 at org.eclipse.core.internal.jobs.Worker.run(Worker.java:63)
