@@ -3,8 +3,8 @@
 
 #include "pico/stdlib.h"
 
-#define DT 14
-#define SCK 15
+#define DT 15
+#define SCK 14
 
 #define clock_time_us 10
 

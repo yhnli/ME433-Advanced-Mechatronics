@@ -17,14 +17,15 @@ int main()
         int v[1000];
         int raw_v[1000];
         uint64_t t[1000];
-        int iir = 828000; // initial value estimate
+        int raw_val0 = read_hx711();
+        int iir = raw_val0; // initial value estimate
 
         for (int i = 0; i < num; i++) {
             // raw value
             int raw_val = read_hx711();
             raw_v[i] = raw_val;
             // iir filtered value
-            iir = 0.1*raw_val + 0.9*iir;
+            iir = 0.03 * raw_val + 0.97 * iir;
             v[i] = (int)iir;
             // time in milliseconds
             t[i] = to_ms_since_boot(get_absolute_time());

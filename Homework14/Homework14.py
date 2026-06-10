@@ -1,119 +1,102 @@
 import serial 
+import sys
 import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+# config
 BAUD_RATE   = 115200
-N_SAMPLES   = 100
+N_SAMPLES   = 500
 TIMEOUT_SEC = 20
+PORT        = "/dev/tty.usbmodem101"   
+BAUD        = BAUD_RATE                
+TIMEOUT     = TIMEOUT_SEC             
 
-OUTPUT_TIME_PLOT = "raw_filtered_time.png"
-OUTPUT_FFT_PLOT  = "raw_filtered_fft.png"
-
-ser = serial.Serial('/dev/tty.usbmodem101', BAUD_RATE, timeout=1)
-print('Opening port: ', ser.name)
-
-# sends a number of data points to collect
-print(f"Requesting {N_SAMPLES} samples …\n")
-ser.write(f"{N_SAMPLES}\n".encode())
-
-timestamps, raw_vals, filtered_vals = [], [], []
-receiving = False
-deadline  = time.time() + TIMEOUT_SEC
-
-# reads all the data back
-while time.time() < deadline:
-    line = ser.readline().decode("utf-8", errors="ignore").strip()
-
-    if not line:
+def read_lines(ser, n, timeout):
+    lines = []
+    deadline = time.time() + timeout
+    while len(lines) < n and time.time() < deadline:
+        line = ser.readline()
+        if not line:
+            continue
+        try:
+            s = line.decode("utf-8", errors="replace").strip()
+        except Exception:
+            continue
+        if s:
+            lines.append(s)
+    return lines
+ 
+with serial.Serial(PORT, BAUD, timeout=10) as ser:
+    ser.reset_input_buffer()
+    ser.reset_output_buffer()
+    print(f"Requesting {N_SAMPLES} samples on {PORT} …")
+    ser.write(f"{N_SAMPLES}\n".encode("utf-8"))
+    ser.flush()
+    raw_lines = read_lines(ser, N_SAMPLES, TIMEOUT)
+ 
+print(f"Received {len(raw_lines)} / {N_SAMPLES} lines.")
+if len(raw_lines) < N_SAMPLES:
+    print("Warning: fewer lines than requested — data may be incomplete.")
+ 
+times, raw_values, filt_values = [], [], []
+ 
+for ln in raw_lines:
+    parts = ln.split()
+    if len(parts) < 3:
         continue
-
-    print(f"  Pico › {line}")
-
-    if line.startswith("START"):
-        receiving = True
-        continue
-
-    if line.startswith("END"):
-        print(f"\nReceived {len(timestamps)} samples.")
-        break
-
-    if line.startswith("TIMEOUT"):
-        print("\nPico reported an HX711 read timeout.")
-        break
-
-    if not receiving:
-        continue
-
-    # Expected format: timestamp_ms,raw,filtered
-    parts = line.split(",")
-    if len(parts) != 3:
-        continue
-
     try:
-        timestamps.append(float(parts[0]))
-        raw_vals.append(float(parts[1]))
-        filtered_vals.append(float(parts[2]))
+        times.append(float(parts[0]))
+        raw_values.append(float(parts[1]))
+        filt_values.append(float(parts[2]))
     except ValueError:
-        print(f"  (skipped malformed line: {line!r})")
-
-else:
-    raise TimeoutError(f"No END marker within {TIMEOUT_SEC}s — check Pico firmware.")
-
-ser.close()
-
-# validate
-if len(timestamps) < 2:
-    raise RuntimeError("Too few samples received — check Pico output.")
-
-time_ms       = np.array(timestamps)
-raw_vals      = np.array(raw_vals)
-filtered_vals = np.array(filtered_vals)
-
+        continue
+ 
+if not times:
+    print("No valid data parsed — check Pico output format.")
+    sys.exit(1)
+ 
+# Convert timestamps to seconds, starting from 0
+times = np.array(times)
+times = (times - times[0]) / 1000.0
+ 
+raw_values  = -np.array(raw_values)
+filt_values = -np.array(filt_values)
+ 
 # sampling stats
-mean_interval_ms = np.diff(time_ms).mean()
-sample_rate_hz   = 1000.0 / mean_interval_ms
-time_s           = time_ms / 1000.0
-
-print(f"\nSampling statistics:")
-print(f"  Mean interval : {mean_interval_ms:.3f} ms")
-print(f"  Sample rate   : {sample_rate_hz:.2f} Hz")
-print(f"  Duration      : {time_s[-1] - time_s[0]:.3f} s")
-
-# time domain plot
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(time_s, raw_vals,      label="Raw",      alpha=0.7)
-ax.plot(time_s, filtered_vals, label="Filtered", linewidth=2)
-ax.set_xlabel("Time (s)")
-ax.set_ylabel("Sensor Reading")
-ax.set_title("HX711 — Raw vs Filtered Signal")
-ax.legend()
-ax.grid(True)
-fig.tight_layout()
-fig.savefig(OUTPUT_TIME_PLOT, dpi=200)
-print(f"\nSaved → {OUTPUT_TIME_PLOT}")
-
-# fft plot
-def compute_fft(signal, fs):
-    n           = len(signal)
-    zero_mean   = signal - signal.mean()
-    magnitudes  = np.abs(np.fft.rfft(zero_mean)) / n
-    frequencies = np.fft.rfftfreq(n, d=1.0 / fs)
-    return frequencies, magnitudes
-
-freqs_raw,  mag_raw  = compute_fft(raw_vals,      sample_rate_hz)
-freqs_filt, mag_filt = compute_fft(filtered_vals, sample_rate_hz)
-
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(freqs_raw,  mag_raw,  label="Raw FFT",      alpha=0.7)
-ax.plot(freqs_filt, mag_filt, label="Filtered FFT", linewidth=2)
-ax.set_xlabel("Frequency (Hz)")
-ax.set_ylabel("Magnitude")
-ax.set_title("HX711 — Frequency Spectrum (FFT)")
-ax.legend()
-ax.grid(True)
-fig.tight_layout()
-fig.savefig(OUTPUT_FFT_PLOT, dpi=200)
-print(f"Saved → {OUTPUT_FFT_PLOT}")
-
+fs = len(times) / (times[-1] - times[0])
+print(f"Sample rate ≈ {fs:.1f} Hz  |  Nyquist ≈ {fs/2:.1f} Hz")
+ 
+# fft
+n   = len(raw_values)
+frq = np.fft.rfftfreq(n, d=1.0 / fs)
+ 
+Y_raw  = np.abs(np.fft.rfft(raw_values  - raw_values.mean()))  / n
+Y_filt = np.abs(np.fft.rfft(filt_values - filt_values.mean())) / n
+ 
+# plots
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+fig.suptitle(f"HX711 force sensor", fontsize=13)
+ 
+# --- FFT (log y-axis) ---
+ax1.semilogy(frq, Y_raw,  color="steelblue", alpha=0.8, label="Raw")
+ax1.semilogy(frq, Y_filt, color="darkorange", linewidth=2, label="IIR filtered")
+ax1.set_xlabel("Frequency (Hz)")
+ax1.set_ylabel("Magnitude")
+ax1.set_title("FFT of raw vs filtered signal")
+ax1.legend()
+ax1.grid(True, which="both", linestyle="--", alpha=0.5)
+ 
+# --- Time domain ---
+ax2.plot(times, raw_values,  color="steelblue", alpha=0.7, label="Raw")
+ax2.plot(times, filt_values, color="darkorange", linewidth=2, label="IIR filtered")
+ax2.set_xlabel("Time (s)")
+ax2.set_ylabel("HX711 reading (counts)")
+ax2.set_title("Raw vs Filtered Signal")
+ax2.legend()
+ax2.grid(True, linestyle="--", alpha=0.5)
+ 
+plt.tight_layout()
+plt.savefig("hx711_data.png", dpi=200)
+print("Saved → hx711_data.png")
 plt.show()
